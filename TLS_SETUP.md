@@ -1,213 +1,177 @@
-# TLS Setup for Docker POC
+# TLS Setup for Docker Development Environment
 
-This guide explains how to apply TLS/HTTPS to your Docker container for development with security best practices.
+This guide covers setting up TLS/HTTPS for the Docker development environment.
 
-## Prerequisites
+## 🚀 Quick Start
 
-- Docker Desktop installed
-- PowerShell (for certificate generation)
-
-## Security Features
-
-This setup includes:
-- ✅ **Non-root user** for enhanced security
-- ✅ **TLS/HTTPS** encryption
-- ✅ **Security headers** protection
-- ✅ **Certificate management** with proper permissions
-
-## Development Setup (Self-Signed Certificate)
-
-### Step 1: Generate Development Certificate
-
-Run the PowerShell script to generate a self-signed certificate:
-
+### 1. Generate Self-Signed Certificates
 ```powershell
 .\generate-cert.ps1
 ```
 
-This will create:
-- `certs/ssl-cert.pfx` - The certificate file
-- `certs/ssl-cert.cer` - The certificate for viewing
-
-### Step 2: Set Permissions for Non-Root User
-
-Set proper permissions for the certificates directory:
-
+### 2. Set Up Permissions
 ```powershell
 .\setup-permissions.ps1
 ```
 
-### Step 3: Trust the Certificate (Development Only)
-
-```powershell
-certutil -addstore -f "ROOT" certs\ssl-cert.cer
-```
-
-### Step 4: Run with Docker Compose
-
+### 3. Start the Application
 ```bash
 docker-compose up --build
 ```
 
-Your application will be available at:
-- HTTP: http://localhost:80
-- HTTPS: https://localhost:443
+## 📋 Prerequisites
 
-## Security Features Explained
+- Docker Desktop running
+- PowerShell (for certificate generation)
+- .NET 8 SDK (for development)
 
-### Non-Root User
-- Container runs as `appuser` (UID 1000) instead of root
-- Reduces attack surface and follows security best practices
-- Proper file permissions ensure the app can still access certificates
+## 🔐 Certificate Generation
 
-### TLS Configuration
-- Self-signed certificates for development
-- HTTPS redirection enabled
-- Security headers configured
+The `generate-cert.ps1` script creates:
+- `certs/ssl-cert.pfx` - Certificate for Kestrel
+- `certs/ssl-cert.cer` - Certificate for browser trust
 
-### Volume Mounting
-- Certificates mounted as read-only (`:ro`)
-- Proper UID/GID mapping for permissions
+**Certificate Details:**
+- **Password**: `password`
+- **DNS Name**: `localhost`
+- **Validity**: 1 year
+- **Type**: Self-signed (development only)
 
-## Using Reverse Proxy (Optional)
+## 🌐 Browser Trust Setup
 
-### Using Nginx as Reverse Proxy
+### Chrome/Edge
+1. Open `chrome://settings/certificates`
+2. Click "Import" under "Authorities"
+3. Select `certs/ssl-cert.cer`
+4. Check "Trust this certificate for identifying websites"
 
-Create `nginx.conf`:
+### Firefox
+1. Open `about:preferences#privacy`
+2. Click "View Certificates"
+3. Go to "Authorities" tab
+4. Click "Import" and select `certs/ssl-cert.cer`
+5. Check "Trust this CA to identify websites"
 
-```nginx
-events {
-    worker_connections 1024;
-}
+## 🐳 Docker Configuration
 
-http {
-    upstream app {
-        server dockerpoc:80;
-    }
+### Development Environment
+- **Ports**: 80 (HTTP), 443 (HTTPS)
+- **Certificate**: Mounted from `./certs:/app/certs:ro`
+- **User**: Non-root (UID 1000)
+- **Health Check**: Enabled
 
-    server {
-        listen 80;
-        server_name localhost;
-        return 301 https://$server_name$request_uri;
-    }
+### Production Environment
+- **Ports**: 80 (HTTP only)
+- **SSL Termination**: Handled by Azure App Service
+- **User**: Non-root (UID 1000)
+- **Health Check**: Enabled
 
-    server {
-        listen 443 ssl;
-        server_name localhost;
+## 🔧 Configuration Files
 
-        ssl_certificate /etc/nginx/certs/ssl-cert.crt;
-        ssl_certificate_key /etc/nginx/certs/ssl-cert.key;
-
-        location / {
-            proxy_pass http://app;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
+### appsettings.json
+```json
+{
+  "Kestrel": {
+    "Endpoints": {
+      "Http": {
+        "Url": "http://0.0.0.0:80"
+      },
+      "Https": {
+        "Url": "https://0.0.0.0:443",
+        "Certificate": {
+          "Path": "certs/ssl-cert.pfx",
+          "Password": "password"
         }
+      }
     }
+  }
 }
 ```
 
-### Docker Compose with Nginx
-
+### docker-compose.yml
 ```yaml
-version: '3.8'
-
-services:
-  dockerpoc:
-    build: .
-    expose:
-      - "80"
-    networks:
-      - app-network
-
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./certs:/etc/nginx/certs:ro
-    depends_on:
-      - dockerpoc
-    networks:
-      - app-network
-
-networks:
-  app-network:
-    driver: bridge
+volumes:
+  - ./certs:/app/certs:ro
+ports:
+  - "80:80"
+  - "443:443"
 ```
 
-## Security Best Practices
+## 🛡️ Security Features
 
-1. **Non-Root User**: Container runs as `appuser` instead of root
-2. **Use Strong Passwords**: Change the default certificate password
-3. **Enable Security Headers**: Already configured in `Program.cs`
-4. **Use HTTPS Only**: Redirect HTTP to HTTPS
-5. **Validate Certificates**: Ensure certificates are valid and trusted
-6. **Read-Only Volumes**: Certificates mounted as read-only
-7. **Proper Permissions**: Certificates accessible by non-root user
+### Development
+- ✅ Self-signed certificates for local development
+- ✅ Non-root user (UID 1000)
+- ✅ Read-only certificate mounting
+- ✅ Health checks
+- ✅ Security headers
 
-## Troubleshooting
+### Production
+- ✅ HTTP-only (SSL termination by Azure)
+- ✅ Non-root user (UID 1000)
+- ✅ Health checks
+- ✅ Security headers
+- ✅ Pinned image versions
+
+## 🚨 Troubleshooting
 
 ### Certificate Issues
-
-If you see certificate errors:
-1. Ensure the certificate is trusted (development)
-2. Check certificate expiration
-3. Verify certificate password in configuration
-4. Run `.\setup-permissions.ps1` to fix permissions
-
-### Permission Issues
-
-If you get permission errors:
-1. Run `.\setup-permissions.ps1` to set proper permissions
-2. Ensure Docker has proper permissions
-3. Check that certificates are readable by the non-root user
-
-### Port Issues
-
-If ports are already in use:
-1. Change port mappings in `docker-compose.yml`
-2. Stop other services using the same ports
-
-## Environment Variables
-
-Key environment variables for TLS:
-
-- `ASPNETCORE_URLS`: Configure HTTP/HTTPS endpoints
-- `ASPNETCORE_ENVIRONMENT`: Set to Development
-- `USER`: Set to `1000:1000` for non-root user
-
-## Testing TLS
-
-Test your HTTPS setup:
-
 ```bash
-# Test HTTP to HTTPS redirect
-curl -I http://localhost:80
+# Regenerate certificates
+.\generate-cert.ps1
 
-# Test HTTPS directly
-curl -I https://localhost:443
-
-# Test with certificate validation
-curl -I --cacert certs/ssl-cert.cer https://localhost:443
+# Rebuild container
+docker-compose down
+docker-compose up --build
 ```
 
-## Container Security Verification
-
-Verify the container is running as non-root:
-
+### Permission Issues
 ```bash
-# Check the user inside the container
-docker-compose exec dockerpoc whoami
+# Fix permissions
+.\setup-permissions.ps1
 
-# Should return: appuser
+# Restart container
+docker-compose restart
+```
 
-# Check the UID
-docker-compose exec dockerpoc id
+### Browser Trust Issues
+1. Clear browser cache
+2. Import certificate again
+3. Restart browser
 
-# Should return: uid=1000(appuser) gid=1000(appuser)
-``` 
+### Port Conflicts
+```bash
+# Check what's using the ports
+netstat -ano | findstr :80
+netstat -ano | findstr :443
+
+# Stop conflicting services
+docker-compose down
+```
+
+## 📝 Notes
+
+- **Development certificates** are self-signed and not trusted by browsers by default
+- **Production** uses Azure App Service SSL termination
+- **Certificates** are mounted as read-only in containers
+- **Non-root user** enhances security
+- **Health checks** monitor application status
+
+## 🔄 Maintenance
+
+### Certificate Renewal
+```powershell
+# Regenerate certificates (when expired)
+.\generate-cert.ps1
+```
+
+### Security Updates
+- Update base images monthly
+- Monitor for CVE announcements
+- Run Checkov security scans
+
+## 📚 Additional Resources
+
+- [ASP.NET Core HTTPS](https://docs.microsoft.com/en-us/aspnet/core/security/enforcing-ssl)
+- [Docker Security Best Practices](https://docs.docker.com/develop/dev-best-practices/)
+- [Kestrel Configuration](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/servers/kestrel) 

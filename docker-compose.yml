@@ -15,6 +15,12 @@ services:
       # Mount certificates directory for development
       - ./certs:/app/certs:ro
     user: "1000:1000"  # Use UID/GID for appuser (security)
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/home"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     networks:
       - app-network
 

@@ -4,7 +4,7 @@ WORKDIR /app
 EXPOSE 80
 EXPOSE 443
 
-# Create a non-root user
+# Create a non-root user for security
 RUN adduser --disabled-password --gecos "" appuser && \
     chown -R appuser:appuser /app
 
@@ -21,7 +21,7 @@ COPY ["DockerPOC.csproj", "./"]
 RUN dotnet restore "DockerPOC.csproj"
 
 # Copy the rest of the source code
-COPY . .
+COPY . ./
 WORKDIR "/src"
 
 # Build the application
@@ -44,8 +44,9 @@ RUN chown -R appuser:appuser /app
 # Switch to non-root user
 USER appuser
 
-# Install development certificate for HTTPS
-RUN dotnet dev-certs https --trust
+# Add health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:80/home || exit 1
 
 # Set the entry point
 ENTRYPOINT ["dotnet", "DockerPOC.dll"] 

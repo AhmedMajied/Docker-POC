@@ -1,20 +1,23 @@
 # PowerShell script to set proper permissions for non-root user
 
-# Create certificates directory if it doesn't exist
+Write-Host "Setting up permissions for non-root user..." -ForegroundColor Green
+
+# Create certs directory if it doesn't exist
 if (!(Test-Path "certs")) {
     New-Item -ItemType Directory -Path "certs"
+    Write-Host "Created certs directory" -ForegroundColor Yellow
 }
 
-# Set permissions for the certificates directory
-# This ensures the non-root user in the container can read the certificates
-Write-Host "Setting permissions for certificates directory..."
+# Set permissions for certs directory (UID 1000 = appuser)
+Write-Host "Setting permissions for certs directory..." -ForegroundColor Yellow
 
-# For Windows, we need to ensure the directory is readable
-# The container will run as UID 1000, so we make it readable by all
+# For Windows, we'll set basic permissions
+# In Docker, the container will handle the actual UID/GID mapping
 $acl = Get-Acl "certs"
-$accessRule = New-Object System.Security.AccessControl.FileSystemAccessRule("Everyone","ReadAndExecute","Allow")
+$accessRule = New-Object System.Security.AccessControl.FileSystemAccessRule("Everyone","FullControl","Allow")
 $acl.SetAccessRule($accessRule)
 Set-Acl "certs" $acl
 
-Write-Host "Permissions set successfully!"
-Write-Host "Certificate directory is now ready for non-root user access." 
+Write-Host "✅ Permissions set successfully!" -ForegroundColor Green
+Write-Host "📁 The certs directory is ready for Docker volume mounting" -ForegroundColor Yellow
+Write-Host "🔐 Certificates will be accessible by the non-root user (UID 1000)" -ForegroundColor Yellow 
