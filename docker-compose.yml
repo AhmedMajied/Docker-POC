@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  dockerpoc:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=https://+:443;http://+:80
+    volumes:
+      # Mount certificates directory for development
+      - ./certs:/app/certs:ro
+    user: "1000:1000"  # Use UID/GID for appuser (security)
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge 

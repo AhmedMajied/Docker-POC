@@ -4,8 +4,13 @@ WORKDIR /app
 EXPOSE 80
 EXPOSE 443
 
+# Create a non-root user
+RUN adduser --disabled-password --gecos "" appuser && \
+    chown -R appuser:appuser /app
+
 # Set environment variables for the application
-ENV ASPNETCORE_URLS=http://+:80
+ENV ASPNETCORE_URLS=https://+:443;http://+:80
+ENV ASPNETCORE_ENVIRONMENT=Development
 
 # Use the official .NET 8 SDK image for building
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
@@ -29,7 +34,18 @@ RUN dotnet publish "DockerPOC.csproj" -c Release -o /app/publish /p:UseAppHost=f
 # Final stage/image
 FROM base AS final
 WORKDIR /app
+
+# Copy the published application
 COPY --from=publish /app/publish .
+
+# Change ownership to non-root user
+RUN chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+
+# Install development certificate for HTTPS
+RUN dotnet dev-certs https --trust
 
 # Set the entry point
 ENTRYPOINT ["dotnet", "DockerPOC.dll"] 
