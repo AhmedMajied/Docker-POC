@@ -8,7 +8,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: AhmedMajied/Docker-POC
 
 jobs:
   build-and-deploy:
@@ -50,4 +50,4 @@ jobs:
       uses: azure/webapps-deploy@v3
       with:
         app-name: 'dockerpoc'  
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} 
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
