@@ -25,6 +25,13 @@ jobs:
       - name: Push Docker Image
         run: docker push ${{ secrets.ACR_LOGIN_SERVER }}/dockerpoc:latest
 
+      # Azure CLI login using ACR creds (just for updating the WebApp)
+      - name: Azure CLI Login
+        uses: azure/login@v1
+        with:
+          creds: '{"clientId":"${{ secrets.ACR_USERNAME }}","clientSecret":"${{ secrets.ACR_PASSWORD }}","subscriptionId":"${{ secrets.SUBSCRIPTION_ID }}"}'
+        continue-on-error: true   # since we are using ACR Admin creds (not service principal)
+
       # Tell Azure Web App to use the latest image
       - name: Deploy to Azure WebApp (Container)
         uses: azure/webapps-deploy@v2
