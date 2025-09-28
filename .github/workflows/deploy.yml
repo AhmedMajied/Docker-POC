@@ -1,0 +1,34 @@
+name: Build and Deploy Dockerized App to Azure WebApp
+
+on:
+  push:
+    branches:
+      - main   # Change if you use another branch
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout repo
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # Log in to Azure Container Registry (ACR)
+      - name: Log in to ACR
+        run: echo ${{ secrets.ACR_PASSWORD }} | docker login ${{ secrets.ACR_LOGIN_SERVER }} -u ${{ secrets.ACR_USERNAME }} --password-stdin
+
+      # Build Docker image
+      - name: Build Docker Image
+        run: docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/dockerpoc:latest .
+
+      # Push Docker image to ACR
+      - name: Push Docker Image
+        run: docker push ${{ secrets.ACR_LOGIN_SERVER }}/dockerpoc:latest
+
+      # Tell Azure Web App to use the latest image
+      - name: Deploy to Azure WebApp (Container)
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: dockerpoc   # 👈 replace with your WebApp name
+          images: ${{ secrets.ACR_LOGIN_SERVER }}/dockerpoc:latest
