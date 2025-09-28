@@ -3,7 +3,7 @@ name: Build and Deploy Dockerized App to Azure WebApp
 on:
   push:
     branches:
-      - main   # Change if you use another branch
+      - master
 
 jobs:
   build-and-deploy:
