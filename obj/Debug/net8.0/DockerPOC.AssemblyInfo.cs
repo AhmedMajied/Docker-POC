@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("DockerPOC")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+cf2cf0f6fbd6b8afe3b906571007743af951060a")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+310d3a9d660ca96012d3fd7a8f60a6b1a0641f5d")]
 [assembly: System.Reflection.AssemblyProductAttribute("DockerPOC")]
 [assembly: System.Reflection.AssemblyTitleAttribute("DockerPOC")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
