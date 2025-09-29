@@ -2,15 +2,10 @@
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
 EXPOSE 80
-EXPOSE 443
 
-# Create a non-root user for security
-RUN adduser --disabled-password --gecos "" appuser && \
-    chown -R appuser:appuser /app
-
-# Set environment variables for the application
-ENV ASPNETCORE_URLS=https://+:443;http://+:80
-ENV ASPNETCORE_ENVIRONMENT=Development
+# Set environment variables for production
+ENV ASPNETCORE_URLS=http://+:80
+ENV ASPNETCORE_ENVIRONMENT=Production
 
 # Use the official .NET 8 SDK image for building
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
@@ -21,7 +16,7 @@ COPY ["DockerPOC.csproj", "./"]
 RUN dotnet restore "DockerPOC.csproj"
 
 # Copy the rest of the source code
-COPY . ./
+COPY . .
 WORKDIR "/src"
 
 # Build the application
@@ -38,15 +33,9 @@ WORKDIR /app
 # Copy the published application
 COPY --from=publish /app/publish .
 
-# Change ownership to non-root user
-RUN chown -R appuser:appuser /app
-
-# Switch to non-root user
-USER appuser
-
-# Add health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:80/home || exit 1
+# Add health check for production
+#HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+#  CMD curl -f http://localhost:80/home || exit 1
 
 # Set the entry point
 ENTRYPOINT ["dotnet", "DockerPOC.dll"] 
