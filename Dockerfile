@@ -34,8 +34,8 @@ WORKDIR /app
 COPY --from=publish /app/publish .
 
 # Add health check for production
-#HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-#  CMD curl -f http://localhost:80/home || exit 1
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f https://dockerpoc-apim.azure-api.net/home || exit 1
 
 # Set the entry point
 ENTRYPOINT ["dotnet", "DockerPOC.dll"] 
